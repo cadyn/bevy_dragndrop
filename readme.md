@@ -14,7 +14,7 @@ Once you have entities with these components, you will be able to make use of th
 that the library provides to actually provide functionality based on the dragging and dropping.
 The four events include `Dropped`, `Dragged`, `HoverChanged`, and `DragAwait`
 
-See the examples for detailed usage, as well as the docs at https://docs.rs/bevy_dragndrop/0.1.0/bevy_dragndrop/
+See the examples for detailed usage, as well as the docs at https://docs.rs/bevy_dragndrop/latest/bevy_dragndrop/
 
 ## License
 

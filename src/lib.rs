@@ -430,8 +430,13 @@ fn is_in_bounds(
 }
 
 fn get_inputs(keys: &Res<Input<KeyCode>>, buttons: &Res<Input<MouseButton>>) -> InputFlags {
-    (InputFlags::LeftClick * (buttons.pressed(MouseButton::Left) as u8)) | (InputFlags::RightClick * (buttons.pressed(MouseButton::Right) as u8)) | (InputFlags::MiddleClick * (buttons.pressed(MouseButton::Middle) as u8)) | (InputFlags::Shift
-            * ((keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight)) as u8)) | (InputFlags::Ctrl
-            * ((keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight)) as u8)) | (InputFlags::Alt
+    (InputFlags::LeftClick * (buttons.pressed(MouseButton::Left) as u8))
+        | (InputFlags::RightClick * (buttons.pressed(MouseButton::Right) as u8))
+        | (InputFlags::MiddleClick * (buttons.pressed(MouseButton::Middle) as u8))
+        | (InputFlags::Shift
+            * ((keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight)) as u8))
+        | (InputFlags::Ctrl
+            * ((keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight)) as u8))
+        | (InputFlags::Alt
             * ((keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight)) as u8))
 }

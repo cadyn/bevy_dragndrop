@@ -8,8 +8,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(DragPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update,on_dropped)
-        .add_systems(Update, on_dragged)
+        .add_systems(Update,(on_dropped,on_dragged,on_hovered))
         .run();
 }
 
@@ -87,7 +86,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                             },
                                             texture: icon.clone(),
                                             ..default()
-                                        }, Draggable::default() 
+                                        }, Draggable {required: InputFlags::LeftClick, disallowed: InputFlags::RightClick | InputFlags::MiddleClick, minimum_held: Some(0.15)}
                                     ));
                                 });
                             });
@@ -125,5 +124,21 @@ fn on_dragged(
     for event in er_drag.read() {
         let mut transform = q_draggable.get_mut(event.dragged).unwrap();
         transform.translation.z = 15.0;
+    }
+}
+
+fn on_hovered(
+    mut er_hovered: EventReader<HoveredChange>,
+    mut q_reciever: Query<&mut Sprite, With<Reciever>>,
+) {
+    for event in er_hovered.read() {
+        if let Some(reciever) = event.reciever {
+            let mut sprite = q_reciever.get_mut(reciever).unwrap();
+            sprite.color = Color::rgb(0.3,0.3,0.3);
+        }
+        if let Some(reciever) = event.prevreciever {
+            let mut sprite = q_reciever.get_mut(reciever).unwrap();
+            sprite.color = Color::rgb(0.1,0.1,0.1);
+        }
     }
 }

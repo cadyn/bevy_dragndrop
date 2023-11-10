@@ -8,8 +8,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(DragPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update,on_dropped)
-        .add_systems(Update, on_dragged)
+        .add_systems(Update,(on_dropped,on_dragged,on_hovered))
         .run();
 }
 
@@ -117,5 +116,21 @@ fn on_dragged(
     for event in er_drag.read() {
         let mut zindex = q_draggable.get_mut(event.dragged).unwrap();
         *zindex = ZIndex::Global(15);
+    }
+}
+
+fn on_hovered(
+    mut er_hovered: EventReader<HoveredChange>,
+    mut q_reciever: Query<&mut BackgroundColor, With<Reciever>>,
+) {
+    for event in er_hovered.read() {
+        if let Some(reciever) = event.reciever {
+            let mut color = q_reciever.get_mut(reciever).unwrap();
+            *color = Color::rgb(0.45,0.45,0.45).into();
+        }
+        if let Some(reciever) = event.prevreciever {
+            let mut color = q_reciever.get_mut(reciever).unwrap();
+            *color = Color::rgb(0.3,0.3,0.3).into();
+        }
     }
 }

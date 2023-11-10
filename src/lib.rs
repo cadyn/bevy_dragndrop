@@ -5,7 +5,6 @@ use bitflags::bitflags;
 
 // Todo: Add more methods for InputFlags maybe
 // Todo: Event for an object being dragged over a reciever but not dropped yet
-// Todo: Add optional minimum duration before start dragging.
 
 bitflags! {
     #[derive(Clone,Copy)]
@@ -33,34 +32,73 @@ impl Mul<u8> for InputFlags {
 /// Event that is sent when an entity is released
 #[derive(Event)]
 pub struct Dropped{
+    /// Entity that was dropped
     pub dropped: Entity,
+    /// Entity that recieved the dropped entity if any.
     pub recieved: Option<Entity>,
+    /// Inputs at the time of the event being sent
     pub inputs: InputFlags,
 }
 
 /// Event that is sent when an entity has just begun being dragged
 #[derive(Event)]
 pub struct Dragged{
+    /// Entity that is being dragged
     pub dragged: Entity,
+    /// Inputs at the time of the event being sent
+    pub inputs: InputFlags,
+}
+
+/// Event that is sent when an entity is waiting for a minimum time to elapse to intiate dragging
+#[derive(Event)]
+pub struct DragAwait{
+    /// Entity that is awaiting to be dragged
+    pub awaiting: Entity,
+    /// Inputs at the time of the event being sent
+    pub inputs: InputFlags,
+}
+
+/// Event that is sent when an entity is hovered over a new reciever, and when it is dropped.
+#[derive(Event)]
+pub struct HoveredChange{
+    /// The entity that is being dragged
+    pub hovered: Entity,
+    /// The entity that is now being hovered over, None if no recievers are being hovered over or if it has been dropped.
+    pub reciever: Option<Entity>,
+    /// The last entity that was being hovered over if any
+    pub prevreciever: Option<Entity>,
+    /// Inputs at the time of the event being sent
     pub inputs: InputFlags,
 }
 
 /// Component that may be attached to anything with a transform and GlobalTransform component to give it draggable functionality.
 #[derive(Component)]
 pub struct Draggable{
+    /// All of these inputs must be pressed down for dragging to initiate.
     pub required: InputFlags,
+    /// Dragging will not initiate if any of these are held down.
     pub disallowed: InputFlags,
+    /// Minimum amount of time for buttons to be held before dragging initiates in seconds.
+    pub minimum_held: Option<f64>,
 }
 
 impl Default for Draggable {
     fn default() -> Self {
-        Draggable {required: InputFlags::LeftClick, disallowed: InputFlags::RightClick | InputFlags::MiddleClick}
+        Draggable {required: InputFlags::LeftClick, disallowed: InputFlags::RightClick | InputFlags::MiddleClick, minimum_held: None}
     }
 }
 
 /// Component used to designate when an object is actively being dragged.
 #[derive(Component)]
-pub struct Dragging;
+pub struct Dragging{
+    pub hovering: Option<Entity>,
+}
+
+/// Component used to designate when an object is waiting to be able to be dragged.
+#[derive(Component)]
+pub struct AwaitingDrag{
+    pub ends: f64,
+}
 
 /// Component that may be attached to anything with a transform and GlobalTransform component to allow it to be detected when a draggable is dropped over it.
 #[derive(Component)]
@@ -72,36 +110,41 @@ pub struct DragPlugin;
 impl Plugin for DragPlugin {
     fn build(&self, app: &mut App) {
         app
-        .add_systems(Update,(startdrag,dragging,drop))
+        .add_systems(Update,(startdrag,dragging.before(drop),drop.after(dragging),awaitdrag))
         .add_event::<Dropped>()
-        .add_event::<Dragged>();
+        .add_event::<Dragged>()
+        .add_event::<DragAwait>()
+        .add_event::<HoveredChange>();
     }
 }
 
 fn startdrag(
     mut commands: Commands,
-    mut q_draggable: Query<(&GlobalTransform, Option<&Handle<Image>>, Entity, Option<&Node>, &Draggable)>, 
-    dragging: Query<&Dragging>, 
+    q_draggable: Query<(&GlobalTransform, Option<&Handle<Image>>, Entity, Option<&Node>, &Draggable)>, 
+    dragging: Query<&Dragging>,
+    awaiting: Query<&AwaitingDrag>,
     buttons: Res<Input<MouseButton>>, 
     keys: Res<Input<KeyCode>>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform)>,
     assets: Res<Assets<Image>>,
     mut ew_dragged: EventWriter<Dragged>,
+    mut ew_await: EventWriter<DragAwait>,
+    time: Res<Time<Real>>,
 ){
     let inputs = get_inputs(&keys, &buttons);
     let window = q_windows.single();
     let (camera, camera_transform) = q_camera.single();
 
-    let mut candidates: Vec<(Entity,f32)> = Vec::new();
+    let mut candidates: Vec<(Entity,f32,&Draggable)> = Vec::new();
 
-    if inputs.intersects(InputFlags::Clicks) && dragging.is_empty() {
+    if inputs.intersects(InputFlags::Clicks) && dragging.is_empty() && awaiting.is_empty() {
         if let Some(logical_position) = window.cursor_position()
         {
             let world_position = camera.viewport_to_world(camera_transform, logical_position).map(|ray| ray.origin.truncate()).unwrap();
-            for (gtransform, image_handle, entity, node, draggable) in q_draggable.iter_mut() {
+            for (gtransform, image_handle, entity, node, draggable) in q_draggable.iter() {
                 if is_in_bounds(gtransform, image_handle, node, &assets, logical_position, world_position) && inputs.contains(draggable.required) && !(inputs.intersects(draggable.disallowed))  {
-                    candidates.push((entity,gtransform.translation().z));
+                    candidates.push((entity,gtransform.translation().z,draggable));
                 }
             }
         }
@@ -113,21 +156,54 @@ fn startdrag(
                     final_candidate = candidate;
                 }
             }
+            if let Some(x) = final_candidate.2.minimum_held {
+                ew_await.send(DragAwait { awaiting: final_candidate.0, inputs});
+                commands.entity(final_candidate.0).insert(AwaitingDrag{ends: time.elapsed_seconds_f64() + x});
+                return;
+            }
             ew_dragged.send(Dragged{dragged: final_candidate.0, inputs});
-            commands.entity(final_candidate.0).insert(Dragging);
+            commands.entity(final_candidate.0).insert(Dragging{hovering: None});
         }
+    }
+}
+
+fn awaitdrag(
+    mut commands: Commands,
+    q_draggable: Query<(Entity, &Draggable, &AwaitingDrag)>,
+    mut ew_dragged: EventWriter<Dragged>,
+    buttons: Res<Input<MouseButton>>, 
+    keys: Res<Input<KeyCode>>,
+    time: Res<Time<Real>>,
+) {
+    let inputs = get_inputs(&keys, &buttons);
+
+    for (entity, draggable, awaiting) in q_draggable.iter() {
+        if inputs.contains(draggable.required) && !(inputs.intersects(draggable.disallowed))  {
+            if time.elapsed_seconds_f64() > awaiting.ends {
+                ew_dragged.send(Dragged{dragged: entity, inputs});
+                commands.entity(entity).insert(Dragging{hovering: None}).remove::<AwaitingDrag>();
+            }
+            return;
+        }
+        commands.entity(entity).remove::<AwaitingDrag>();
     }
 }
 
 fn dragging(
     q_parent:Query<&GlobalTransform>,
-    mut q_dragging:Query<(&Parent,&mut Transform, Option<&mut Style>),With<Dragging>>,
+    mut q_dragging:Query<(&Parent,&mut Transform, Option<&mut Style>, &mut Dragging, Entity)>,
+    q_recievers: Query<(&GlobalTransform, Option<&Handle<Image>>, Entity, Option<&Node>),With<Reciever>>,
+    buttons: Res<Input<MouseButton>>, 
+    keys: Res<Input<KeyCode>>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform)>,
+    assets: Res<Assets<Image>>,
+    mut ew_hover: EventWriter<HoveredChange>,
 ){
+    let inputs = get_inputs(&keys, &buttons);
     let window = q_windows.single();
     let (camera, camera_transform) = q_camera.single();
-    for (parent, mut transform, style) in q_dragging.iter_mut() {
+    for (parent, mut transform, style, mut dragging, entity) in q_dragging.iter_mut() {
         let gtransform = q_parent.get(parent.get()).unwrap();
         if let Some(logical_position) = window.cursor_position()
         {
@@ -147,6 +223,23 @@ fn dragging(
 
                 transform.translation = local_point;
             }
+
+            for (gtransform, image_handle, reciever, node) in q_recievers.iter() {
+                if is_in_bounds(gtransform, image_handle, node, &assets, logical_position, world_position) {
+                    if let Some(hovered) = dragging.hovering {
+                        if hovered == reciever {
+                            return;
+                        }
+                    }
+                    ew_hover.send(HoveredChange{hovered: entity, prevreciever: dragging.hovering, reciever: Some(reciever), inputs});
+                    dragging.hovering = Some(reciever);
+                    return;
+                }
+            }
+            if let Some(_) = dragging.hovering {
+                ew_hover.send(HoveredChange{hovered: entity, prevreciever: dragging.hovering, reciever: None, inputs});
+                dragging.hovering = None;
+            }
         }
     }
 }
@@ -156,10 +249,11 @@ fn drop(
     buttons: Res<Input<MouseButton>>, 
     keys: Res<Input<KeyCode>>,
     q_recievers: Query<(&GlobalTransform, Option<&Handle<Image>>, Entity, Option<&Node>),With<Reciever>>,
-    q_dragging: Query<(Entity, &Draggable), With<Dragging>>,
+    q_dragging: Query<(Entity, &Draggable, &Dragging)>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform)>,
     mut ew_dropped: EventWriter<Dropped>,
+    mut ew_hover: EventWriter<HoveredChange>,
     assets: Res<Assets<Image>>,
 ){
     let inputs = get_inputs(&keys, &buttons);
@@ -173,19 +267,21 @@ fn drop(
         let world_position = camera.viewport_to_world(camera_transform, logical_position).map(|ray| ray.origin.truncate()).unwrap();
         for (gtransform, image_handle, entity, node) in q_recievers.iter() {
             if is_in_bounds(gtransform, image_handle, node, &assets, logical_position, world_position) {
-                for (dragging, draggable) in q_dragging.iter(){
+                for (drag_entity, draggable, dragging) in q_dragging.iter(){
                     if !inputs.intersects(draggable.required & InputFlags::Clicks) {
-                        ew_dropped.send(Dropped{dropped:dragging, recieved: Some(entity), inputs});
-                        commands.entity(dragging).remove::<Dragging>();
+                        ew_hover.send(HoveredChange { hovered: drag_entity, reciever: None, prevreciever: dragging.hovering, inputs: inputs });
+                        ew_dropped.send(Dropped{dropped:drag_entity, recieved: Some(entity), inputs});
+                        commands.entity(drag_entity).remove::<Dragging>();
                     }
                 }
                 return;
             }
         }
-        for (dragging, draggable) in q_dragging.iter(){
+        for (entity, draggable, dragging) in q_dragging.iter(){
             if !inputs.intersects(draggable.required & InputFlags::Clicks) {
-                ew_dropped.send(Dropped{dropped:dragging, recieved: None, inputs});
-                commands.entity(dragging).remove::<Dragging>();
+                ew_hover.send(HoveredChange { hovered: entity, reciever: None, prevreciever: dragging.hovering, inputs: inputs });
+                ew_dropped.send(Dropped{dropped:entity, recieved: None, inputs});
+                commands.entity(entity).remove::<Dragging>();
             }
         }
     }

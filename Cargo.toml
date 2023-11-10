@@ -1,7 +1,7 @@
 [package]
 name = "bevy_dragndrop"
 description = "A simple crate to make implementing drag and drop functionality much easier for the bevy ECS engine."
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Cadyn Bombaci"]
 edition = "2021"
 license = "MIT OR Apache-2.0"

@@ -15,6 +15,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      - name: Install bevy dependencies
+        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Check out
         uses: actions/checkout@v3
       - name: Set up cargo cache

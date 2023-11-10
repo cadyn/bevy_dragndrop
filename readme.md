@@ -6,7 +6,7 @@ reports or feature requests are welcome.
 
 ## Usage
 Usage is designed to be simple and leave most of the control in the hands of you. 
-The main components you'll need are `bevy_dragndrop::Draggable` and `bevy_dragndrop::Recievable`
+The main components you'll need are `bevy_dragndrop::Draggable` and `bevy_dragndrop::Receiver`
 These components can be attached to any entity with at minimum a transform and GlobalTransform.
 They are also compatible with NodeBundles.
 

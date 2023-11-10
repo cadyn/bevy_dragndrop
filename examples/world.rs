@@ -80,7 +80,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                                 },
                                                 ..default()
                                             },
-                                            Reciever,
+                                            Receiver,
                                         ))
                                         .with_children(|parent| {
                                             parent.spawn((
@@ -123,16 +123,16 @@ fn on_dropped(
     mut er_drop: EventReader<Dropped>,
     mut q_draggable: Query<&mut Transform, With<Draggable>>,
     parent: Query<&Parent, With<Draggable>>,
-    children: Query<&Children, With<Reciever>>,
+    children: Query<&Children, With<Receiver>>,
 ) {
     for event in er_drop.read() {
-        if let Some(recieved) = event.recieved {
+        if let Some(received) = event.received {
             let ent_parent = parent.get(event.dropped).unwrap().get();
             commands.entity(event.dropped).remove_parent();
 
-            let child = *children.get(recieved).unwrap().iter().next().unwrap();
+            let child = *children.get(received).unwrap().iter().next().unwrap();
             commands
-                .entity(recieved)
+                .entity(received)
                 .remove_children(&[child])
                 .add_child(event.dropped);
             commands.entity(ent_parent).add_child(child);
@@ -154,15 +154,15 @@ fn on_dragged(
 
 fn on_hovered(
     mut er_hovered: EventReader<HoveredChange>,
-    mut q_reciever: Query<&mut Sprite, With<Reciever>>,
+    mut q_receiver: Query<&mut Sprite, With<Receiver>>,
 ) {
     for event in er_hovered.read() {
-        if let Some(reciever) = event.reciever {
-            let mut sprite = q_reciever.get_mut(reciever).unwrap();
+        if let Some(receiver) = event.receiver {
+            let mut sprite = q_receiver.get_mut(receiver).unwrap();
             sprite.color = Color::rgb(0.3, 0.3, 0.3);
         }
-        if let Some(reciever) = event.prevreciever {
-            let mut sprite = q_reciever.get_mut(reciever).unwrap();
+        if let Some(receiver) = event.prevreceiver {
+            let mut sprite = q_receiver.get_mut(receiver).unwrap();
             sprite.color = Color::rgb(0.1, 0.1, 0.1);
         }
     }

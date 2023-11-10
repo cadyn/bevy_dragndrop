@@ -4,7 +4,6 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bitflags::bitflags;
 
 // Todo: Add more methods for InputFlags maybe
-// Todo: Event for an object being dragged over a reciever but not dropped yet
 
 bitflags! {
     #[derive(Clone,Copy)]
@@ -34,8 +33,8 @@ impl Mul<u8> for InputFlags {
 pub struct Dropped {
     /// Entity that was dropped
     pub dropped: Entity,
-    /// Entity that recieved the dropped entity if any.
-    pub recieved: Option<Entity>,
+    /// Entity that received the dropped entity if any.
+    pub received: Option<Entity>,
     /// Inputs at the time of the event being sent
     pub inputs: InputFlags,
 }
@@ -58,15 +57,15 @@ pub struct DragAwait {
     pub inputs: InputFlags,
 }
 
-/// Event that is sent when an entity is hovered over a new reciever, and when it is dropped.
+/// Event that is sent when an entity is hovered over a new receiver, and when it is dropped.
 #[derive(Event)]
 pub struct HoveredChange {
     /// The entity that is being dragged
     pub hovered: Entity,
-    /// The entity that is now being hovered over, None if no recievers are being hovered over or if it has been dropped.
-    pub reciever: Option<Entity>,
+    /// The entity that is now being hovered over, None if no receivers are being hovered over or if it has been dropped.
+    pub receiver: Option<Entity>,
     /// The last entity that was being hovered over if any
-    pub prevreciever: Option<Entity>,
+    pub prevreceiver: Option<Entity>,
     /// Inputs at the time of the event being sent
     pub inputs: InputFlags,
 }
@@ -106,7 +105,7 @@ pub struct AwaitingDrag {
 
 /// Component that may be attached to anything with a transform and GlobalTransform component to allow it to be detected when a draggable is dropped over it.
 #[derive(Component)]
-pub struct Reciever;
+pub struct Receiver;
 
 /// Plugin that contains systems and events for dragging and dropping.
 pub struct DragPlugin;
@@ -242,14 +241,14 @@ fn dragging(
         &mut Dragging,
         Entity,
     )>,
-    q_recievers: Query<
+    q_receivers: Query<
         (
             &GlobalTransform,
             Option<&Handle<Image>>,
             Entity,
             Option<&Node>,
         ),
-        With<Reciever>,
+        With<Receiver>,
     >,
     buttons: Res<Input<MouseButton>>,
     keys: Res<Input<KeyCode>>,
@@ -288,7 +287,7 @@ fn dragging(
                 transform.translation = local_point;
             }
 
-            for (gtransform, image_handle, reciever, node) in q_recievers.iter() {
+            for (gtransform, image_handle, receiver, node) in q_receivers.iter() {
                 if is_in_bounds(
                     gtransform,
                     image_handle,
@@ -298,25 +297,25 @@ fn dragging(
                     world_position,
                 ) {
                     if let Some(hovered) = dragging.hovering {
-                        if hovered == reciever {
+                        if hovered == receiver {
                             return;
                         }
                     }
                     ew_hover.send(HoveredChange {
                         hovered: entity,
-                        prevreciever: dragging.hovering,
-                        reciever: Some(reciever),
+                        prevreceiver: dragging.hovering,
+                        receiver: Some(receiver),
                         inputs,
                     });
-                    dragging.hovering = Some(reciever);
+                    dragging.hovering = Some(receiver);
                     return;
                 }
             }
             if dragging.hovering.is_some() {
                 ew_hover.send(HoveredChange {
                     hovered: entity,
-                    prevreciever: dragging.hovering,
-                    reciever: None,
+                    prevreceiver: dragging.hovering,
+                    receiver: None,
                     inputs,
                 });
                 dragging.hovering = None;
@@ -329,14 +328,14 @@ fn drop(
     mut commands: Commands,
     buttons: Res<Input<MouseButton>>,
     keys: Res<Input<KeyCode>>,
-    q_recievers: Query<
+    q_receivers: Query<
         (
             &GlobalTransform,
             Option<&Handle<Image>>,
             Entity,
             Option<&Node>,
         ),
-        With<Reciever>,
+        With<Receiver>,
     >,
     q_dragging: Query<(Entity, &Draggable, &Dragging)>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
@@ -356,7 +355,7 @@ fn drop(
             .viewport_to_world(camera_transform, logical_position)
             .map(|ray| ray.origin.truncate())
             .unwrap();
-        for (gtransform, image_handle, entity, node) in q_recievers.iter() {
+        for (gtransform, image_handle, entity, node) in q_receivers.iter() {
             if is_in_bounds(
                 gtransform,
                 image_handle,
@@ -369,13 +368,13 @@ fn drop(
                     if !inputs.intersects(draggable.required & InputFlags::Clicks) {
                         ew_hover.send(HoveredChange {
                             hovered: drag_entity,
-                            reciever: None,
-                            prevreciever: dragging.hovering,
+                            receiver: None,
+                            prevreceiver: dragging.hovering,
                             inputs,
                         });
                         ew_dropped.send(Dropped {
                             dropped: drag_entity,
-                            recieved: Some(entity),
+                            received: Some(entity),
                             inputs,
                         });
                         commands.entity(drag_entity).remove::<Dragging>();
@@ -388,13 +387,13 @@ fn drop(
             if !inputs.intersects(draggable.required & InputFlags::Clicks) {
                 ew_hover.send(HoveredChange {
                     hovered: entity,
-                    reciever: None,
-                    prevreciever: dragging.hovering,
+                    receiver: None,
+                    prevreceiver: dragging.hovering,
                     inputs,
                 });
                 ew_dropped.send(Dropped {
                     dropped: entity,
-                    recieved: None,
+                    received: None,
                     inputs,
                 });
                 commands.entity(entity).remove::<Dragging>();

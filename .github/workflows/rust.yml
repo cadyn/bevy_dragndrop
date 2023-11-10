@@ -32,7 +32,7 @@ jobs:
       - name: Lint
         run: |
           cargo fmt --all -- --check
-          cargo clippy -- -D warnings
+          cargo clippy -- -D warnings -Aclippy::too_many_arguments -Aclippy::type_complexity
       - name: Examples
         run: |
           cargo build --examples

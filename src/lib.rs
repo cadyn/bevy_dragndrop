@@ -176,7 +176,7 @@ fn startdrag(
                 }
             }
         }
-        if candidates.len() > 0 {
+        if !candidates.is_empty() {
             //Get the candidate with the highest Z
             let mut final_candidate = candidates[0];
             for candidate in candidates {
@@ -312,7 +312,7 @@ fn dragging(
                     return;
                 }
             }
-            if let Some(_) = dragging.hovering {
+            if dragging.hovering.is_some() {
                 ew_hover.send(HoveredChange {
                     hovered: entity,
                     prevreciever: dragging.hovering,
@@ -371,7 +371,7 @@ fn drop(
                             hovered: drag_entity,
                             reciever: None,
                             prevreciever: dragging.hovering,
-                            inputs: inputs,
+                            inputs,
                         });
                         ew_dropped.send(Dropped {
                             dropped: drag_entity,
@@ -390,7 +390,7 @@ fn drop(
                     hovered: entity,
                     reciever: None,
                     prevreciever: dragging.hovering,
-                    inputs: inputs,
+                    inputs,
                 });
                 ew_dropped.send(Dropped {
                     dropped: entity,
@@ -430,13 +430,8 @@ fn is_in_bounds(
 }
 
 fn get_inputs(keys: &Res<Input<KeyCode>>, buttons: &Res<Input<MouseButton>>) -> InputFlags {
-    InputFlags::LeftClick * (buttons.pressed(MouseButton::Left) as u8)
-        | InputFlags::RightClick * (buttons.pressed(MouseButton::Right) as u8)
-        | InputFlags::MiddleClick * (buttons.pressed(MouseButton::Middle) as u8)
-        | InputFlags::Shift
-            * ((keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight)) as u8)
-        | InputFlags::Ctrl
-            * ((keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight)) as u8)
-        | InputFlags::Alt
-            * ((keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight)) as u8)
+    (InputFlags::LeftClick * (buttons.pressed(MouseButton::Left) as u8)) | (InputFlags::RightClick * (buttons.pressed(MouseButton::Right) as u8)) | (InputFlags::MiddleClick * (buttons.pressed(MouseButton::Middle) as u8)) | (InputFlags::Shift
+            * ((keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight)) as u8)) | (InputFlags::Ctrl
+            * ((keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight)) as u8)) | (InputFlags::Alt
+            * ((keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight)) as u8))
 }

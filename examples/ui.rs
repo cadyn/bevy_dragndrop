@@ -27,7 +27,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 justify_content: JustifyContent::SpaceAround,
                 ..default()
             },
-            background_color: Color::rgb(0.40, 0.40, 0.40).into(),
+            background_color: Color::srgb(0.40, 0.40, 0.40).into(),
             ..default()
         })
         .with_children(|parent| {
@@ -42,7 +42,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         aspect_ratio: Some(1.0),
                         ..default()
                     },
-                    background_color: Color::rgb(0.10, 0.10, 0.10).into(),
+                    background_color: Color::srgb(0.10, 0.10, 0.10).into(),
                     ..default()
                 })
                 .with_children(|parent| {
@@ -64,8 +64,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                             align_content: AlignContent::Center,
                                             ..default()
                                         },
-                                        background_color: Color::rgb(0.30, 0.30, 0.30).into(),
-                                        border_color: Color::rgb(0.75, 0.75, 0.75).into(),
+                                        background_color: Color::srgb(0.30, 0.30, 0.30).into(),
+                                        border_color: Color::srgb(0.75, 0.75, 0.75).into(),
                                         ..default()
                                     },
                                     Receiver,
@@ -140,11 +140,11 @@ fn on_hovered(
     for event in er_hovered.read() {
         if let Some(receiver) = event.receiver {
             let mut color = q_receiver.get_mut(receiver).unwrap();
-            *color = Color::rgb(0.45, 0.45, 0.45).into();
+            *color = Color::srgb(0.45, 0.45, 0.45).into();
         }
         if let Some(receiver) = event.prevreceiver {
             let mut color = q_receiver.get_mut(receiver).unwrap();
-            *color = Color::rgb(0.3, 0.3, 0.3).into();
+            *color = Color::srgb(0.3, 0.3, 0.3).into();
         }
     }
 }

@@ -17,12 +17,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Camera
     commands.spawn(Camera2dBundle::default());
 
-    let mut rng = rand::thread_rng();
+    let mut rng = thread_rng();
 
     commands
         .spawn(SpriteBundle {
             sprite: Sprite {
-                color: Color::rgb(0.40, 0.40, 0.40),
+                color: Color::srgb(0.40, 0.40, 0.40),
                 ..default()
             },
             transform: Transform {
@@ -35,7 +35,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             parent
                 .spawn(SpriteBundle {
                     sprite: Sprite {
-                        color: Color::rgb(0.10, 0.10, 0.10),
+                        color: Color::srgb(0.10, 0.10, 0.10),
                         ..default()
                     },
                     transform: Transform {
@@ -51,7 +51,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             parent
                                 .spawn(SpriteBundle {
                                     sprite: Sprite {
-                                        color: Color::rgb(0.75, 0.75, 0.75),
+                                        color: Color::srgb(0.75, 0.75, 0.75),
                                         ..default()
                                     },
                                     transform: Transform {
@@ -70,7 +70,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         .spawn((
                                             SpriteBundle {
                                                 sprite: Sprite {
-                                                    color: Color::rgb(0.10, 0.10, 0.10),
+                                                    color: Color::srgb(0.10, 0.10, 0.10),
                                                     ..default()
                                                 },
                                                 transform: Transform {
@@ -159,11 +159,11 @@ fn on_hovered(
     for event in er_hovered.read() {
         if let Some(receiver) = event.receiver {
             let mut sprite = q_receiver.get_mut(receiver).unwrap();
-            sprite.color = Color::rgb(0.3, 0.3, 0.3);
+            sprite.color = Color::srgb(0.3, 0.3, 0.3);
         }
         if let Some(receiver) = event.prevreceiver {
             let mut sprite = q_receiver.get_mut(receiver).unwrap();
-            sprite.color = Color::rgb(0.1, 0.1, 0.1);
+            sprite.color = Color::srgb(0.1, 0.1, 0.1);
         }
     }
 }

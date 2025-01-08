@@ -48,7 +48,7 @@ pub struct Dragged {
     pub inputs: InputFlags,
 }
 
-/// Event that is sent when an entity is waiting for a minimum time to elapse to intiate dragging
+/// Event that is sent when an entity is waiting for a minimum time to elapse to initiate dragging
 #[derive(Event)]
 pub struct DragAwait {
     /// Entity that is awaiting to be dragged
@@ -139,8 +139,8 @@ fn startdrag(
     )>,
     dragging: Query<&Dragging>,
     awaiting: Query<&AwaitingDrag>,
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    keys: Res<ButtonInput<KeyCode>>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform)>,
     assets: Res<Assets<Image>>,
@@ -208,8 +208,8 @@ fn awaitdrag(
     mut commands: Commands,
     q_draggable: Query<(Entity, &Draggable, &AwaitingDrag)>,
     mut ew_dragged: EventWriter<Dragged>,
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time<Real>>,
 ) {
     let inputs = get_inputs(&keys, &buttons);
@@ -250,8 +250,8 @@ fn dragging(
         ),
         With<Receiver>,
     >,
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    keys: Res<ButtonInput<KeyCode>>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform)>,
     assets: Res<Assets<Image>>,
@@ -326,8 +326,8 @@ fn dragging(
 
 fn drop(
     mut commands: Commands,
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    keys: Res<ButtonInput<KeyCode>>,
     q_receivers: Query<
         (
             &GlobalTransform,
@@ -428,7 +428,7 @@ fn is_in_bounds(
     }
 }
 
-fn get_inputs(keys: &Res<Input<KeyCode>>, buttons: &Res<Input<MouseButton>>) -> InputFlags {
+fn get_inputs(keys: &Res<ButtonInput<KeyCode>>, buttons: &Res<ButtonInput<MouseButton>>) -> InputFlags {
     (InputFlags::LeftClick * (buttons.pressed(MouseButton::Left) as u8))
         | (InputFlags::RightClick * (buttons.pressed(MouseButton::Right) as u8))
         | (InputFlags::MiddleClick * (buttons.pressed(MouseButton::Middle) as u8))

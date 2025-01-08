@@ -1,7 +1,7 @@
 [package]
 name = "bevy_dragndrop"
 description = "A simple crate to make implementing drag and drop functionality much easier for the bevy ECS engine."
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Cadyn Bombaci"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -11,12 +11,12 @@ repository = "https://github.com/cadyn/bevy_dragndrop"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dev-dependencies]
-bevy = {version = "0.12.0", default-features = true, features = ["dynamic_linking"]}
-rand = "0.8.5"
+bevy = {version = "0.14", default-features = true, features = ["dynamic_linking"]}
+rand = "0.8"
 
 [dependencies]
-bevy = {version = "0.12.0", default-features = false, features = ["bevy_asset","bevy_render","bevy_ui"]}
-bitflags = "2.4.1"
+bevy = {version = "0.14", default-features = false, features = ["bevy_asset","bevy_render","bevy_ui"]}
+bitflags = "2.6"
 
 
 # Enable a small amount of optimization in debug mode
